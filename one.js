@@ -4,13 +4,13 @@ The end result is one dimentional array buffer.
 */
 
 /*
-Origin is the base class 
+Origin is the base class
 */
 class Origin {
 	constructor (x, y, z){
 		this.originX = x;
-		this.originY = y;	
-		this.originZ = z;	
+		this.originY = y;
+		this.originZ = z;
 	};
 };
 
@@ -27,16 +27,16 @@ class SinglePoint extends Origin {
 		this.Z = z;
 	}
 	get arrayBuffer(){
-		return [this.X, this.Y, this.Z];	
-	} 
+		return [this.X, this.Y, this.Z];
+	}
 	get translationVector() {
-		return [this.X - this.originX, this.Y- this.originY, this.Z- this.originZ];	
-	} 
-	
+		return [this.X - this.originX, this.Y- this.originY, this.Z- this.originZ];
+	}
+
 	get distance() {
 		var xr = (this.X - this.originX) * (this.X - this.originX);
 		var yr = (this.Y - this.originY) * (this.Y - this.originY);
-		var zr = (this.Z - this.originZ) * (this.Z - this.originZ);	
+		var zr = (this.Z - this.originZ) * (this.Z - this.originZ);
 		return Math.sqrt(xr+yr+zr);
 	}
 }
@@ -66,16 +66,16 @@ class Segment extends Origin {
 		var y = this.pointB.Y - this.pointA.Y;
 		var z = this.pointB.Z - this.pointA.Z;
 		return [x, y, z];
-	}	
+	}
 	get vectorA(){
-		return this.pointA.translationVector; 
+		return this.pointA.translationVector;
 	}
 	get vectorB(){
-		return this.pointB.translationVector; 
+		return this.pointB.translationVector;
 	}
 	collinear (x, y, z){
 		let x0 = this.pointA.X;
-		let y0 = this.pointA.Y; 
+		let y0 = this.pointA.Y;
 		let z0 = this.pointA.Z;
 		let a = this.segmentVector[0];
 		let b = this.segmentVector[1];
@@ -95,7 +95,7 @@ class Segment extends Origin {
 }
 
 /*
-Tria is triangular shape. If any two points are same return undefined 
+Tria is triangular shape. If any two points are same return undefined
 If three points are collinear return undefined
 */
 
@@ -112,9 +112,9 @@ class Tria extends Origin {
 		}
 		else {
 			super(originx, originy, originz);
-			this.pointA = new SinglePoint(pointa[0], pointa[1], pointa[2], originx, originy, originz); 
+			this.pointA = new SinglePoint(pointa[0], pointa[1], pointa[2], originx, originy, originz);
 			this.pointB = new SinglePoint(pointb[0], pointb[1], pointb[2], originx, originy, originz);
-			this.pointC = new SinglePoint(pointc[0], pointc[1], pointc[2], originx, originy, originz);	
+			this.pointC = new SinglePoint(pointc[0], pointc[1], pointc[2], originx, originy, originz);
 		}
 	}
 	get segmentBC(){
@@ -130,7 +130,7 @@ class Tria extends Origin {
 		return ca;
 	}
 	get arrayBuffer(){
-		return [this.pointA.X, this.pointA.Y, this.pointA.Z, this.pointB.X, this.pointB.Y, this.pointB.Z, this.pointC.X, this.pointC.Y, this.pointC.Z];  
+		return [this.pointA.X, this.pointA.Y, this.pointA.Z, this.pointB.X, this.pointB.Y, this.pointB.Z, this.pointC.X, this.pointC.Y, this.pointC.Z];
 	}
 	get perpendicularVector(){
 		let ab = this.segmentAB.segmentVector;
@@ -140,7 +140,7 @@ class Tria extends Origin {
 		let k = ab[0]*bc[1] - ab[1]*bc[0];
 		return [i, j, k];
 	}
-	
+
 	coplanar(x, y, z){
 		let a = this.perpendicularVector[0];
 		let b = this.perpendicularVector[1];
@@ -184,7 +184,7 @@ class Quad extends Tria {
 		}
 	}
 	get arrayBuffer(){
-		return [this.pointA.X, this.pointA.Y, this.pointA.Z, this.pointB.X, this.pointB.Y, this.pointB.Z, this.pointC.X, this.pointC.Y, this.pointC.Z, 
+		return [this.pointA.X, this.pointA.Y, this.pointA.Z, this.pointB.X, this.pointB.Y, this.pointB.Z, this.pointC.X, this.pointC.Y, this.pointC.Z,
 		this.pointD.X, this.pointD.Y, this.pointD.Z]
 	}
 	get segmentCD(){
@@ -195,6 +195,53 @@ class Quad extends Tria {
 		let da = new Segment(this.pointD, this.pointA, this.originX, this.originY, this.originZ)
 		return da;
 	}
-	
 }
 
+/*
+Polygon can be made by multiple Tria.
+Polygon shape's center is offset by 3D vector from the origin
+Polygon shape's plane is perpendicular to the tranlation vector
+Polygon shape takes edge amount and corner center distance as radius
+*/
+Class Polygon extends Origin {
+	constructor(edge, radius, translateX, translateY, translateZ, originx, originy, originz){
+		super(originx, originy, originz);
+		this.edgeAmount = edge;
+		this.radius = radius;
+		this.transX = translateX;
+		this.transY = translateY;
+		this.transZ = translateZ;
+	}
+	get centerPoint() {
+		return [this.originX + this.transX, this.originY + this.transY, this.originZ + this.transZ];
+	}
+	get translateVector() {
+		return [this.transX, this.transY, this.transZ];
+	}
+	onPlane(x, y, z){
+		let a = this.translateVector[0];
+		let b = this.translateVector[1];
+		let c = this.translateVector[2];
+		let x0 = this.centerPoint[0];
+		let y0 = this.centerPoint[1];
+		let z0 = this.centerPoint[2];
+		if (a*x0 + b*y0 + c*z0 === 0){
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	get intersectPlane(){
+		if (this.translateVector[0] !== 0){
+			return "X"
+		}
+		elseif (this.translateVector[1] !== 0){
+			return "Y"
+		}
+		elseif (this.translateVector[2] !== 0){
+			return "Y"
+		}
+	}
+
+}
