@@ -185,7 +185,7 @@ class Quad extends Tria {
 	}
 	get arrayBuffer(){
 		return [this.pointA.X, this.pointA.Y, this.pointA.Z, this.pointB.X, this.pointB.Y, this.pointB.Z, this.pointC.X, this.pointC.Y, this.pointC.Z, 
-		this.pointD.X, this.pointD.Y, this.pointD.Z]
+		this.pointD.X, this.pointD.Y, this.pointD.Z];
 	}
 	get segmentCD(){
 		let cd = new Segment(this.pointC, this.pointD, this.originX, this.originY, this.originZ)
@@ -195,6 +195,90 @@ class Quad extends Tria {
 		let da = new Segment(this.pointD, this.pointA, this.originX, this.originY, this.originZ)
 		return da;
 	}
-	
 }
 
+/*
+Orthogonal Box is consisted of two Quads
+Origin stays in center 
+*/
+
+class Box extends Origin {
+	constructor (length, width, height, originx, originy, originz ){
+		super(originx, originy, originz);
+		this.length = length;
+		this.width = width;
+		this.height = height;
+	}
+	get topQuad(){
+		let A = [this.originX - this.width/2, this.originY + this.height/2, this.originZ - this.length/2];
+		let B = [this.originX + this.width/2, this.originY + this.height/2, this.originZ - this.length/2];
+		let C = [this.originX + this.width/2, this.originY + this.height/2, this.originZ + this.length/2];
+		let D = [this.originX - this.width/2, this.originY + this.height/2, this.originZ + this.length/2];
+		let result = new Quad(A,B,C,D,this.originX, this.originY, this.originZ);
+		return result;
+	}
+	get bottomQuad(){
+		let A = [this.originX - this.width/2, this.originY - this.height/2, this.originZ - this.length/2];
+		let B = [this.originX + this.width/2, this.originY - this.height/2, this.originZ - this.length/2];
+		let C = [this.originX + this.width/2, this.originY - this.height/2, this.originZ + this.length/2];
+		let D = [this.originX - this.width/2, this.originY - this.height/2, this.originZ + this.length/2];
+		let result = new Quad(A,B,C,D,this.originX, this.originY, this.originZ);
+		return result;
+	}
+	get arrayBuffer(){
+		let result = []
+		this.topQuad.arrayBuffer.forEach(function (e){
+			result.push(e);
+		})
+		this.bottomQuad.arrayBuffer.forEach(function (e){
+			result.push(e);
+		})
+		return result;
+	}
+}
+
+/*
+Polygons are made of lots of Tria
+Polygons have one center and translation vector from origin point
+If origin is 0, 0, 0 assuming translation vector j
+Polygons plane is perpendicular to translation vector
+*/
+
+class Polygon extends Origin {
+	constructor (edge, radius, originx, originy, originz){
+		super(originx, originy, originz);
+		this.edge = edge;
+		this.radius = radius;
+	}
+	get translationVector (){
+		if (this.originX === this.originY && this.originY === this.originZ && this.originZ === 0){
+			return [0, 1, 0];
+		}
+		else {
+			return [this.originX, this.originY, this.originZ];	
+		}
+	}
+	getAxisIntersect(axis){
+		let a = this.originX;
+		let b = this.originY;
+		let c = this.originZ;
+		switch (axis){
+			case "X":
+			return (c*c + b*b)/a + a;
+			break;
+			case "Y":
+			return (c*c + a*a)/b + b;
+			break;
+			case "Z":
+			return (b*b + a*a)/c + c;	
+		}
+	}
+	get triaList(){
+		let result = [];
+		let xinter = this.getAxisIntersect("X");
+		let yinter = this.getAxisIntersect("Y");
+		let zinter = this.getAxisIntersect("Z");
+		
+	}
+	
+}
