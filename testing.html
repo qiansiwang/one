@@ -2,14 +2,58 @@
     <head>
         <title>test</title>
         <script src="one.js"></script>
+        <script src="three.js"></script>
+        <script src="orbit.js"></script>
     </head>
     <body>
+        <div id="canvas"></div>
+
         <script>
-            var sp = new SinglePoint(1, 2, 3, 0, 0, 0)
-            var sg = new Segment([0, 0, 0], [10, 0, 0], 0, 0, 0)
-            var tr = new Tria([0, 0, 0], [10, 0, 0], [0, 10, 0], 0, 0, 0)
-            var qu = new Quad([0, 0, 0], [10, 0, 0], [0, 10, 0], [10, 10, 0], 0, 0, 0)
-            var box = new Box(10, 10, 10, 0, 10, 0)
+            var sp = new SinglePoint([1, 1, 0], [0, 1, 0], [180, 1, 0, 0, "A"])
+            var sg = new Segment([0, 0, 0], [10, 0, 0], [0, 0, 0], [0, 1, 0, 0, "A"])
+            var tr = new Tria([0, 0, 0], [10, 0, 0], [0, 10, 0], [0, 0, 0], [0, 1, 0, 0, "A"])
+            var qu = new Quad([0, 0, 0], [10, 0, 0], [0, 10, 0], [10, 10, 0], [0, 0, 0], [0, 1, 0, 0, "A"])
+            var box = new Box(10, 10, 10, [0, 5, 0], [0, 1, 0, 0, "A"])
+            
+            
+        </script>
+        <script>
+            var scene = new THREE.Scene();
+            var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            var renderer = new THREE.WebGLRenderer();
+            var trackball = new THREE.OrbitControls(camera, renderer.domElement);
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(new THREE.Color(0xEEEEEE, 1.0));
+            camera.position.z = -50;
+            var ambientlight = new THREE.AmbientLight(0x404040);
+            var directionlight = new THREE.DirectionalLight(0xffffff);
+            directionlight.lookAt(0, 0, 0);
+            scene.add(directionlight);
+            scene.add(ambientlight);
+            document.getElementById("canvas").appendChild(renderer.domElement);
+
+            var points = new THREE.PointCloud();
+            var vertices = [];
+            var newgeo = new THREE.Geometry();
+
+            function render() {
+                requestAnimationFrame(render);
+                renderer.render(scene, camera);
+                trackball.update();
+            }
+
+            for (var i = 0; i < box.arrayBuffer.length/3; i++) {
+                var x = box.arrayBuffer[(i + 1) * 3 - 3]
+                var y = box.arrayBuffer[(i + 1) * 3 - 2]
+                var z = box.arrayBuffer[(i + 1) * 3 - 1]
+                var vertice = new THREE.Vector3(x, y, z)
+                vertices.push(vertice);
+            }
+            points.geometry = newgeo;
+            newgeo.vertices = vertices;
+            scene.add(points);
+            render();
         </script>
 
     </body>

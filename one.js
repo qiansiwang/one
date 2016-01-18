@@ -10,16 +10,28 @@ either pass [s, i, j, k] as quaternion to rotation
 or pass [theta, i, j, k] as an angle and a vector
 */
 class Origin {
-	constructor (translation, rotation, option){
+	constructor (translation, rotation){
 		this.translation = translation;
 		this.rotation = rotation;
-		this.option = option;
 	};
+	get option(){
+		return this.rotation[4];
+	}
 	get s(){
-		return this.rotation[0];
+		if (this.option === "A") {
+			return;	
+		}
+		else {
+			return this.rotation[0];	
+		}
 	}
 	get theta(){
-		return this.rotation[0];
+		if (this.option === "A") {
+			return this.rotation[0]/180*Math.PI/2;
+		}
+		else {
+			return;
+		}
 	}
 	get i(){
 		return this.rotation[1];
@@ -30,7 +42,7 @@ class Origin {
 	get k(){
 		return this.rotation[3];
 	}
-	rotateByQuaternion(){
+	get rotateByQuaternion(){
 		let e11 = 2*(this.s*this.s + this.i*this.i) - 1;
 		let e12 = 2*(this.i*this.j - this.s*this.k);
 		let e13 = 2*(this.i*this.k + this.s*this.j);
@@ -45,15 +57,16 @@ class Origin {
 		let z = e31*this.translation[0] + e32*this.translation[1] + e33*this.translation[2];
 		return [x, y, z];
 	}
-	rotateByAnglarVector(){
+	get rotateByAnglarVector(){
 		let cos = Math.cos(2 * this.theta);
 		let sin = Math.sin(2 * this.theta);
-		let vx = this.normalize(this.translation[0], this.translation[1], this.translation[2])[0];
-		let vy = this.normalize(this.translation[0], this.translation[1], this.translation[2])[1];
-		let vz = this.normalize(this.translation[0], this.translation[1], this.translation[2])[2];
-		let ux = this.normalize(this.i, this.j, this.k)[0];
-		let uy = this.normalize(this.i, this.j, this.k)[1];
-		let uz = this.normalize(this.i, this.j, this.k)[2];
+		let ux = this.translation[0];
+		let uy = this.translation[1];
+		let uz = this.translation[2];
+		let normal2 = this.normalize(this.i, this.j, this.k)
+		let vx = normal2[0];
+		let vy = normal2[1];
+		let vz = normal2[2];
 		let vudot = vx*ux + vy*uy + vz*uz;
 		let newx = (1-cos)*vudot*vx + cos*ux + sin*(vy*uz-vz*uy);
 		let newy = (1-cos)*vudot*vy + cos*uy + sin*(-vx*uz+vz*ux*vz);
@@ -61,7 +74,7 @@ class Origin {
 		return [newx, newy, newz];
 	}
 	get X(){
-		if (this.option == "A"){
+		if (this.option === "A"){
 			return this.rotateByAnglarVector[0];	
 		}
 		else {
@@ -69,7 +82,7 @@ class Origin {
 		}
 	}
 	get Y(){
-		if (this.option == "A"){
+		if (this.option === "A"){
 			return this.rotateByAnglarVector[1];	
 		}
 		else {
@@ -77,16 +90,19 @@ class Origin {
 		}
 	}
 	get Z(){
-		if (this.option == "A"){
+		if (this.option === "A"){
 			return this.rotateByAnglarVector[2];
 		}
 		else {
 			return this.rotateByQuaternion[2];
 		}
 	}		
-	static normalize(x, y, z){
+	normalize(x, y, z){
 		let a = Math.sqrt(x*x + y*y + z*z)
 		//0,0,0 will give infinity
+		if (x==y && y==z && z==0) {
+			throw "Rotation Vector Cannot Be (0,0,0)"
+		}
 		return [x/a, y/a, z/a]
 	}
 };
@@ -96,8 +112,8 @@ Single Point is single vertex with origin
 */
 
 class SinglePoint extends Origin {
-	constructor (vector, translation, rotation, option) {
-		super([vector[0]+translation[0], vector[1]+translation[1], vector[2]+translation[2]], rotation, option);
+	constructor (vector, translation, rotation) {
+		super([vector[0]+translation[0], vector[1]+translation[1], vector[2]+translation[2]], rotation);
 		this.localVector = vector
 	}
     get arrayBuffer(){
@@ -115,29 +131,31 @@ array buffer return A, B
 */
 
 class Segment extends Origin {
-	constructor (vectora, vectorb, translation, rotation, option){
+	constructor (vectora, vectorb, translation, rotation){
 		if (vectora[0] === vectorb[0] && vectora[1] === vectorb[1] && vectora[2] === vectorb[2]){
 			return;
 		}
 		else {
-			super(translation, rotation, option);
+			super(translation, rotation);
 			this.vectora = vectora;
 			this.vectorb = vectorb;
 		}
 	}
 	get pointA(){
-		return new SinglePoint(this.vectora, this.translation, this.rotation, this.option);
+		return new SinglePoint(this.vectora, this.translation, this.rotation);
 	}
 	get pointB(){
-		return new SinglePoint(this.vectorb, this.translation, this.rotation, this.option);
+		return new SinglePoint(this.vectorb, this.translation, this.rotation);
 	}
 	get arrayBuffer(){
 		return [this.pointA.X, this.pointA.Y, this.pointA.Z, this.pointB.X, this.pointB.Y, this.pointB.Z];
 	}
     get segmentVector(){
-		var x = this.pointB.X - this.pointA.X;
-		var y = this.pointB.Y - this.pointA.Y;
-		var z = this.pointB.Z - this.pointA.Z;
+		let pointa = this.pointA
+		let pointb = this.pointB
+		var x = pointb.X - pointa.X;
+		var y = pointb.Y - pointa.Y;
+		var z = pointb.Z - pointa.Z;
 		return [x, y, z];
 	}
 	get vectorA(){
@@ -172,47 +190,49 @@ If three points are collinear return undefined
 */
 
 class Tria extends Origin {
-	constructor (vectora, vectorb, vectorc, translation, rotation, option){
+	constructor (vectora, vectorb, vectorc, translation, rotation){
 		if ((vectora[0] === vectorb[0] && vectora[1] === vectorb[1] && vectora[2] === vectorb[2]) ||
 			(vectora[0] === vectorc[0] && vectora[1] === vectorc[1] && vectora[2] === vectorc[2]) ||
 			(vectorc[0] === vectorb[0] && vectorc[1] === vectorb[1] && vectorc[2] === vectorb[2])){
 			return;
 		}
-		let tempseg = new Segment(vectora, vectorb, [0,0,0], [0,0,0,0], "A")
+		let tempseg = new Segment(vectora, vectorb, [0,0,0], [0,1,0,0,"A"])
 		if (tempseg.collinear(vectorc[0], vectorc[1], vectorc[2])){
 			return;
 		}
 		else {
-			super(translation, rotation, option);
+			super(translation, rotation);
 			this.vectora = vectora;
 			this.vectorb = vectorb;
 			this.vectorc = vectorc;
 		}
 	}
 	get pointA(){
-		return new SinglePoint(this.vectora, this.translation, this.rotation, this.option);
+		return new SinglePoint(this.vectora, this.translation, this.rotation);
 	}
 	get pointB(){
-		return new SinglePoint(this.vectorb, this.translation, this.rotation, this.option);
+		return new SinglePoint(this.vectorb, this.translation, this.rotation);
 	}
 	get pointC(){
-		return new SinglePoint(this.vectorc, this.translation, this.rotation, this.option);
+		return new SinglePoint(this.vectorc, this.translation, this.rotation);
 	}
 	get segmentBC(){
-		return new Segment(this.vectorb, this.vectorc, this.translation, this.rotation, this.option);
+		return new Segment(this.vectorb, this.vectorc, this.translation, this.rotation);
 	}
 	get segmentAB(){
-		return new Segment(this.vectora, this.vectorb, this.translation, this.rotation, this.option);
+		return new Segment(this.vectora, this.vectorb, this.translation, this.rotation);
 	}
 	get segmentCA(){
-		return new Segment(this.vectorc, this.vectora, this.translation, this.rotation, this.option);
+		return new Segment(this.vectorc, this.vectora, this.translation, this.rotation);
 	}
 	get arrayBuffer(){
 		return [this.pointA.X, this.pointA.Y, this.pointA.Z, this.pointB.X, this.pointB.Y, this.pointB.Z, this.pointC.X, this.pointC.Y, this.pointC.Z];
 	}
 	get perpendicularVector(){
-		let ab = this.segmentAB.segmentVector;
-		let bc = this.segmentBC.segmentVector;
+		let segab = this.segmentAB;
+		let ab = segab.segmentVector
+		let segbc = this.segmentBC;
+		let bc = segbc.segmentVector
 		let i = ab[1]*bc[2] - ab[2]*bc[1];
 		let j = ab[2]*bc[0] - ab[0]*bc[2];
 		let k = ab[0]*bc[1] - ab[1]*bc[0];
@@ -242,7 +262,7 @@ If the four points are not coplanar then return undefined.
 */
 
 class Quad extends Tria {
-	constructor (vectora, vectorb, vectorc, vectord, translation, rotation, option){
+	constructor (vectora, vectorb, vectorc, vectord, translation, rotation){
 		if ((vectora[0] === vectorb[0] && vectora[1] === vectorb[1] && vectora[2] === vectorb[2]) ||
 			(vectora[0] === vectorc[0] && vectora[1] === vectorc[1] && vectora[2] === vectorc[2]) ||
 			(vectorc[0] === vectorb[0] && vectorc[1] === vectorb[1] && vectorc[2] === vectorb[2]) ||
@@ -252,9 +272,9 @@ class Quad extends Tria {
 			){
 			return;
 		}
-		let temptri = new Tria(vectora, vectorb, vectorc, [0,0,0], [0,0,0,0], "A");
+		let temptri = new Tria(vectora, vectorb, vectorc, [0,0,0], [0,1,0,0,"A"]);
 		if (temptri.coplanar(vectord[0], vectord[1], vectord[2])){
-			super(vectora, vectorb, vectorc, translation, rotation, option);
+			super(vectora, vectorb, vectorc, translation, rotation);
 			this.vectord = vectord;
 		}
 		else {
@@ -262,17 +282,17 @@ class Quad extends Tria {
 		}
 	}
 	get pointD(){
-		return new SinglePoint(this.vectord, this.translation, this.rotation, this.option);
+		return new SinglePoint(this.vectord, this.translation, this.rotation);
 	}
 	get arrayBuffer(){
 		return [this.pointA.X, this.pointA.Y, this.pointA.Z, this.pointB.X, this.pointB.Y, this.pointB.Z, this.pointC.X, this.pointC.Y, this.pointC.Z, 
 		this.pointD.X, this.pointD.Y, this.pointD.Z];
 	}
 	get segmentCD(){
-		return new Segment(this.vectorc, this.vectord, this.translation, this.rotation, this.option);
+		return new Segment(this.vectorc, this.vectord, this.translation, this.rotation);
 	}
 	get segmentDA(){
-		return new Segment(this.vectord, this.vectora, this.translation, this.rotation, this.option);
+		return new Segment(this.vectord, this.vectora, this.translation, this.rotation);
 	}
 }
 
@@ -282,8 +302,8 @@ Origin stays in center
 */
 
 class Box extends Origin {
-	constructor (length, width, height, translation, rotation, option){
-		super(translation, rotation, option);
+	constructor (length, width, height, translation, rotation){
+		super(translation, rotation);
 		this.length = length;
 		this.width = width;
 		this.height = height;
@@ -293,7 +313,7 @@ class Box extends Origin {
 		let B = [this.width/2, this.height/2, - this.length/2];
 		let C = [this.width/2, this.height/2, this.length/2];
 		let D = [- this.width/2, this.height/2, this.length/2];
-		let result = new Quad(A,B,C,D,this.translation, this.rotation, this.option);
+		let result = new Quad(A,B,C,D,this.translation, this.rotation);
 		return result;
 	}
 	get bottomQuad(){
@@ -301,7 +321,7 @@ class Box extends Origin {
 		let B = [this.width/2, - this.height/2, - this.length/2];
 		let C = [this.width/2, - this.height/2, this.length/2];
 		let D = [- this.width/2, - this.height/2, this.length/2];
-		let result = new Quad(A,B,C,D,this.translation, this.rotation, this.option);
+		let result = new Quad(A,B,C,D,this.translation, this.rotation);
 		return result;
 	}
 	get arrayBuffer(){
