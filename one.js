@@ -19,10 +19,10 @@ class Origin {
 	}
 	get s(){
 		if (this.option === "A") {
-			return;	
+			return;
 		}
 		else {
-			return this.rotation[0];	
+			return this.rotation[0];
 		}
 	}
 	get theta(){
@@ -75,7 +75,7 @@ class Origin {
 	}
 	get X(){
 		if (this.option === "A"){
-			return this.rotateByAnglarVector[0];	
+			return this.rotateByAnglarVector[0];
 		}
 		else {
 			return this.rotateByQuaternion[0];
@@ -83,7 +83,7 @@ class Origin {
 	}
 	get Y(){
 		if (this.option === "A"){
-			return this.rotateByAnglarVector[1];	
+			return this.rotateByAnglarVector[1];
 		}
 		else {
 			return this.rotateByQuaternion[1];
@@ -96,7 +96,7 @@ class Origin {
 		else {
 			return this.rotateByQuaternion[2];
 		}
-	}		
+	}
 	normalize(x, y, z){
 		let a = Math.sqrt(x*x + y*y + z*z)
 		//0,0,0 will give infinity
@@ -261,7 +261,7 @@ Quad is four points on same surface. If any two points are same return undefined
 If the four points are not coplanar then return undefined.
 */
 
-class Quad extends Tria {
+class Quad extends Origin {
 	constructor (vectora, vectorb, vectorc, vectord, translation, rotation){
 		if ((vectora[0] === vectorb[0] && vectora[1] === vectorb[1] && vectora[2] === vectorb[2]) ||
 			(vectora[0] === vectorc[0] && vectora[1] === vectorc[1] && vectora[2] === vectorc[2]) ||
@@ -274,19 +274,36 @@ class Quad extends Tria {
 		}
 		let temptri = new Tria(vectora, vectorb, vectorc, [0,0,0], [0,1,0,0,"A"]);
 		if (temptri.coplanar(vectord[0], vectord[1], vectord[2])){
-			super(vectora, vectorb, vectorc, translation, rotation);
+			super(translation, rotation);
+			this.vectora = vectora;
+			this.vectorb = vectorb;
+			this.vectorc = vectorc;
 			this.vectord = vectord;
 		}
 		else {
 			return;
 		}
 	}
+	get triaA(){
+		return new Tria(this.vectora, this.vectorb, this.vectorc, this.translation, this.rotation)
+	}
+	get triaB(){
+		return new Tria(this.vectorc, this.vectord, this.vectora, this.translation, this.rotation)
+	}
+	get pointA(){
+		return new SinglePoint(this.vectora, this.translation, this.rotation);
+	}
+	get pointB(){
+		return new SinglePoint(this.vectorb, this.translation, this.rotation);
+	}
+	get pointC(){
+		return new SinglePoint(this.vectorc, this.translation, this.rotation);
+	}
 	get pointD(){
 		return new SinglePoint(this.vectord, this.translation, this.rotation);
 	}
 	get arrayBuffer(){
-		return [this.pointA.X, this.pointA.Y, this.pointA.Z, this.pointB.X, this.pointB.Y, this.pointB.Z, this.pointC.X, this.pointC.Y, this.pointC.Z, 
-		this.pointD.X, this.pointD.Y, this.pointD.Z];
+		return this.triaA.arrayBuffer.concat(this.triaB.arrayBuffer)
 	}
 	get segmentCD(){
 		return new Segment(this.vectorc, this.vectord, this.translation, this.rotation);
@@ -298,7 +315,7 @@ class Quad extends Tria {
 
 /*
 Orthogonal Box is consisted of two Quads
-Origin stays in center 
+Origin stays in center
 */
 
 class Box extends Origin {
@@ -310,9 +327,25 @@ class Box extends Origin {
 	}
 	get topQuad(){
 		let A = [- this.width/2, this.height/2, - this.length/2];
-		let B = [this.width/2, this.height/2, - this.length/2];
+		let B = [- this.width/2, this.height/2, this.length/2];
 		let C = [this.width/2, this.height/2, this.length/2];
+		let D = [this.width/2, this.height/2, - this.length/2];
+		let result = new Quad(A,B,C,D,this.translation, this.rotation);
+		return result;
+	}
+	get leftQuad(){
+		let A = [- this.width/2, this.height/2, - this.length/2];
+		let B = [- this.width/2, - this.height/2, - this.length/2];
+		let C = [- this.width/2, - this.height/2, this.length/2];
 		let D = [- this.width/2, this.height/2, this.length/2];
+		let result = new Quad(A,B,C,D,this.translation, this.rotation);
+		return result;
+	}
+	get frontQuad(){
+		let A = [- this.width/2, this.height/2, this.length/2];
+		let B = [- this.width/2, - this.height/2, this.length/2];
+		let C = [this.width/2, - this.height/2, this.length/2];
+		let D = [this.width/2, this.height/2, this.length/2];
 		let result = new Quad(A,B,C,D,this.translation, this.rotation);
 		return result;
 	}
@@ -324,12 +357,40 @@ class Box extends Origin {
 		let result = new Quad(A,B,C,D,this.translation, this.rotation);
 		return result;
 	}
+	get rightQuad(){
+		let A = [this.width/2, this.height/2, this.length/2];
+		let B = [this.width/2, - this.height/2, this.length/2];
+		let C = [this.width/2, - this.height/2, - this.length/2];
+		let D = [this.width/2, this.height/2, - this.length/2];
+		let result = new Quad(A,B,C,D,this.translation, this.rotation);
+		return result;
+	}
+	get backQuad(){
+		let A = [this.width/2, this.height/2, - this.length/2];
+		let D = [- this.width/2, this.height/2, - this.length/2];
+		let C = [- this.width/2, - this.height/2, - this.length/2];
+		let B = [this.width/2, - this.height/2, - this.length/2];
+		let result = new Quad(A,B,C,D,this.translation, this.rotation);
+		return result;
+	}
 	get arrayBuffer(){
 		let result = []
 		this.topQuad.arrayBuffer.forEach(function (e){
 			result.push(e);
 		})
+		this.leftQuad.arrayBuffer.forEach(function (e){
+			result.push(e);
+		})
+		this.frontQuad.arrayBuffer.forEach(function (e){
+			result.push(e);
+		})
 		this.bottomQuad.arrayBuffer.forEach(function (e){
+			result.push(e);
+		})
+		this.rightQuad.arrayBuffer.forEach(function (e){
+			result.push(e);
+		})
+		this.backQuad.arrayBuffer.forEach(function (e){
 			result.push(e);
 		})
 		return result;
@@ -337,24 +398,82 @@ class Box extends Origin {
 }
 
 /*
-Polygons are made of lots of segment
+Polygons are made of lots of triangulars parallel to XZ plane
 Polygons have one center and translation vector from origin point
-If origin is 0, 0, 0 assuming translation vector j
-Polygons plane is perpendicular to translation vector
 */
 
 class Polygon extends Origin {
-	constructor (edge, radius, centervector, translation, rotation, option){
-		super(translation, rotation, option);
+	constructor (edge, radius, centervector, translation, rotation){
+		super(translation, rotation);
 		this.edge = edge;
 		this.radius = radius;
-        this.center = centervector;
+    this.center = centervector;
 	}
 	get centerPoint(){
-		return new SinglePoint(this.center, this.translation, this.rotation, this.option);
+		return new SinglePoint(this.center, this.translation, this.rotation);
 	}
-	
-	
-	
-	
+	get triaList(){
+		let result = [];
+		for (let i = 0;	i	<	this.edge; i++){
+			let center = this.center;
+			let a = Math.PI*2/this.edge;
+			let x1 = Math.sin(a*i)*this.radius + this.center[0];
+			let y1 = this.center[1];
+			let z1 = Math.cos(a*i)*this.radius + this.center[2];
+			let point1 = [x1, y1, z1];
+			let x2 = Math.sin(a*(i+1))*this.radius + this.center[0];
+			let y2 = this.center[1];
+			let z2 = Math.cos(a*(i+1))*this.radius + this.center[2];
+			let point2 = [x2, y2, z2];
+			let tria = new Tria(center, point1, point2, this.translation, this.rotation);
+			result.push(tria);
+		}
+		return result;
+	}
+	get arrayBuffer(){
+		let result = [];
+		let list = this.triaList;
+		list.forEach(function(e){
+			let x0 = e.pointA.X;
+			let y0 = e.pointA.Y;
+			let z0 = e.pointA.Z;
+			let x1 = e.pointB.X;
+			let y1 = e.pointB.Y;
+			let z1 = e.pointB.Z;
+			let x2 = e.pointC.X;
+			let y2 = e.pointC.Y;
+			let z2 = e.pointC.Z
+			result.push(x0);
+			result.push(y0);
+			result.push(z0);
+			result.push(x1);
+			result.push(y1);
+			result.push(z1);
+			result.push(x2);
+			result.push(y2);
+			result.push(z2);
+		})
+		return result;
+	}
+}
+
+/*
+Orthogonal Cylinder
+*/
+class Cylinder extends Origin {
+	constructor (edge, radius, height, translation, rotation){
+		super(translation, rotation);
+		this.edge = edge;
+		this.radius = radius;
+		this.height = height;
+	}
+	get topPolygon(){
+		return new Polygon(this.edge, this.radius, [0,this.height/2,0], this.translation, this.rotation);
+	}
+	get bottomPolygon(){
+		return new Polygon(this.edge, this.radius, [0,-this.height/2,0], this.translation, this.rotation);
+	}
+	get arrayBuffer(){
+		return this.topPolygon.arrayBuffer.concat(this.bottomPolygon.arrayBuffer);
+	}
 }

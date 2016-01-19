@@ -1,6 +1,12 @@
 <html>
     <head>
         <title>test</title>
+        <style>
+          body{
+            overflow: hidden;
+            margin: 0
+          }
+        </style>
         <script src="one.js"></script>
         <script src="three.js"></script>
         <script src="orbit.js"></script>
@@ -14,14 +20,20 @@
             var tr = new Tria([0, 0, 0], [10, 0, 0], [0, 10, 0], [0, 0, 0], [0, 1, 0, 0, "A"])
             var qu = new Quad([0, 0, 0], [10, 0, 0], [0, 10, 0], [10, 10, 0], [0, 0, 0], [0, 1, 0, 0, "A"])
             var box = new Box(10, 10, 10, [0, 5, 0], [0, 1, 0, 0, "A"])
-            
-            
+            var poly = new Polygon(50, 5, [10,5,0], [0,0,0],[45, 1, 0, 0, "A"])
+            var cyli = new Cylinder(8, 5, 10, [0,10,5], [45, 1, 0, 0, "A"])
+
+
         </script>
         <script>
             var scene = new THREE.Scene();
             var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             var renderer = new THREE.WebGLRenderer();
             var trackball = new THREE.OrbitControls(camera, renderer.domElement);
+            var gridhelper = new THREE.GridHelper(20,1);
+            scene.add(gridhelper)
+            var axishelper = new THREE.AxisHelper(10,10,10);
+            scene.add(axishelper)
 
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setClearColor(new THREE.Color(0xEEEEEE, 1.0));
@@ -36,6 +48,8 @@
             var points = new THREE.PointCloud();
             var vertices = [];
             var newgeo = new THREE.Geometry();
+            var material = new THREE.MeshBasicMaterial({color:0X00C3C3, transparent:true, opacity: 0.2})
+            var geo = new THREE.BufferGeometry();
 
             function render() {
                 requestAnimationFrame(render);
@@ -43,16 +57,25 @@
                 trackball.update();
             }
 
-            for (var i = 0; i < box.arrayBuffer.length/3; i++) {
-                var x = box.arrayBuffer[(i + 1) * 3 - 3]
-                var y = box.arrayBuffer[(i + 1) * 3 - 2]
-                var z = box.arrayBuffer[(i + 1) * 3 - 1]
+            var buffer = new Float32Array(poly.arrayBuffer.length)
+            for (var i=0; i< poly.arrayBuffer.length; i++){
+              buffer[i] = poly.arrayBuffer[i];
+            }
+            geo.addAttribute('position', new THREE.BufferAttribute(buffer,3));
+            var mesh = new THREE.Mesh(geo, material);
+
+
+            for (var i = 0; i < poly.arrayBuffer.length/3; i++) {
+                var x = poly.arrayBuffer[(i + 1) * 3 - 3]
+                var y = poly.arrayBuffer[(i + 1) * 3 - 2]
+                var z = poly.arrayBuffer[(i + 1) * 3 - 1]
                 var vertice = new THREE.Vector3(x, y, z)
                 vertices.push(vertice);
             }
             points.geometry = newgeo;
             newgeo.vertices = vertices;
             scene.add(points);
+            scene.add(mesh);
             render();
         </script>
 
