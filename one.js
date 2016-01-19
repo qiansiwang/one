@@ -117,13 +117,16 @@ class SinglePoint extends Origin {
 		this.localVector = vector
 	}
     get arrayBuffer(){
-		return [this.X, this.Y, this.Z];
+		let result = new Float32Array(3)
+		result[0] = this.X;
+		result[1] = this.Y;
+		result[2] = this.Z;
+		return result;
 	}
 	get originDistance() {
 		return Math.sqrt(this.X*this.X+this.Y*this.Y+this.Z*this.Z);
 	}
 }
-
 
 /*
 Segment is consisted of two points. If two points are same return undefined
@@ -132,14 +135,15 @@ array buffer return A, B
 
 class Segment extends Origin {
 	constructor (vectora, vectorb, translation, rotation){
-		if (vectora[0] === vectorb[0] && vectora[1] === vectorb[1] && vectora[2] === vectorb[2]){
+		/*if (vectora[0] === vectorb[0] && vectora[1] === vectorb[1] && vectora[2] === vectorb[2]){
 			return;
 		}
 		else {
-			super(translation, rotation);
-			this.vectora = vectora;
-			this.vectorb = vectorb;
-		}
+		}*/
+		super(translation, rotation);
+		this.vectora = vectora;
+		this.vectorb = vectorb;
+		
 	}
 	get pointA(){
 		return new SinglePoint(this.vectora, this.translation, this.rotation);
@@ -148,7 +152,14 @@ class Segment extends Origin {
 		return new SinglePoint(this.vectorb, this.translation, this.rotation);
 	}
 	get arrayBuffer(){
-		return [this.pointA.X, this.pointA.Y, this.pointA.Z, this.pointB.X, this.pointB.Y, this.pointB.Z];
+		let result = new Float32Array(6)
+		result[0] = this.pointA.X
+		result[1] = this.pointA.Y
+		result[2] = this.pointA.Z
+		result[3] = this.pointB.X
+		result[4] = this.pointB.Y
+		result[5] = this.pointB.Z
+		return result;
 	}
     get segmentVector(){
 		let pointa = this.pointA
@@ -191,7 +202,7 @@ If three points are collinear return undefined
 
 class Tria extends Origin {
 	constructor (vectora, vectorb, vectorc, translation, rotation){
-		if ((vectora[0] === vectorb[0] && vectora[1] === vectorb[1] && vectora[2] === vectorb[2]) ||
+		/*if ((vectora[0] === vectorb[0] && vectora[1] === vectorb[1] && vectora[2] === vectorb[2]) ||
 			(vectora[0] === vectorc[0] && vectora[1] === vectorc[1] && vectora[2] === vectorc[2]) ||
 			(vectorc[0] === vectorb[0] && vectorc[1] === vectorb[1] && vectorc[2] === vectorb[2])){
 			return;
@@ -201,11 +212,11 @@ class Tria extends Origin {
 			return;
 		}
 		else {
-			super(translation, rotation);
+		}*/
+		super(translation, rotation);
 			this.vectora = vectora;
 			this.vectorb = vectorb;
 			this.vectorc = vectorc;
-		}
 	}
 	get pointA(){
 		return new SinglePoint(this.vectora, this.translation, this.rotation);
@@ -226,7 +237,17 @@ class Tria extends Origin {
 		return new Segment(this.vectorc, this.vectora, this.translation, this.rotation);
 	}
 	get arrayBuffer(){
-		return [this.pointA.X, this.pointA.Y, this.pointA.Z, this.pointB.X, this.pointB.Y, this.pointB.Z, this.pointC.X, this.pointC.Y, this.pointC.Z];
+		let result = new Float32Array(9);
+		result[0] = this.pointA.X
+		result[1] = this.pointA.Y
+		result[2] = this.pointA.Z
+		result[3] = this.pointB.X
+		result[4] = this.pointB.Y
+		result[5] = this.pointB.Z
+		result[6] = this.pointC.X
+		result[7] = this.pointC.Y
+		result[8] = this.pointC.Z 
+		return result;
 	}
 	get perpendicularVector(){
 		let segab = this.segmentAB;
@@ -258,12 +279,12 @@ class Tria extends Origin {
 
 /*
 Quad is four points on same surface. If any two points are same return undefined.
-If the four points are not coplanar then return undefined.
+Not checking this any more. If the four points are not coplanar then return undefined.
 */
 
 class Quad extends Origin {
 	constructor (vectora, vectorb, vectorc, vectord, translation, rotation){
-		if ((vectora[0] === vectorb[0] && vectora[1] === vectorb[1] && vectora[2] === vectorb[2]) ||
+		/*if ((vectora[0] === vectorb[0] && vectora[1] === vectorb[1] && vectora[2] === vectorb[2]) ||
 			(vectora[0] === vectorc[0] && vectora[1] === vectorc[1] && vectora[2] === vectorc[2]) ||
 			(vectorc[0] === vectorb[0] && vectorc[1] === vectorb[1] && vectorc[2] === vectorb[2]) ||
 			(vectorc[0] === vectord[0] && vectorc[1] === vectord[1] && vectorc[2] === vectord[2]) ||
@@ -274,15 +295,16 @@ class Quad extends Origin {
 		}
 		let temptri = new Tria(vectora, vectorb, vectorc, [0,0,0], [0,1,0,0,"A"]);
 		if (temptri.coplanar(vectord[0], vectord[1], vectord[2])){
-			super(translation, rotation);
-			this.vectora = vectora;
-			this.vectorb = vectorb;
-			this.vectorc = vectorc;
-			this.vectord = vectord;
+			
 		}
 		else {
 			return;
-		}
+		}*/
+		super(translation, rotation);
+		this.vectora = vectora;
+		this.vectorb = vectorb;
+		this.vectorc = vectorc;
+		this.vectord = vectord;
 	}
 	get triaA(){
 		return new Tria(this.vectora, this.vectorb, this.vectorc, this.translation, this.rotation)
@@ -303,7 +325,18 @@ class Quad extends Origin {
 		return new SinglePoint(this.vectord, this.translation, this.rotation);
 	}
 	get arrayBuffer(){
-		return this.triaA.arrayBuffer.concat(this.triaB.arrayBuffer)
+		let a = this.triaA.arrayBuffer
+		let b = this.triaB.arrayBuffer
+		let result = new Float32Array(18);
+		for (let i = 0; i < 18; i++){
+			if (i < 9){
+				result[i] = a[i];
+			}
+			else {
+				result[i] = b[i-9];
+			}
+		}
+		return result;
 	}
 	get segmentCD(){
 		return new Segment(this.vectorc, this.vectord, this.translation, this.rotation);
@@ -374,25 +407,28 @@ class Box extends Origin {
 		return result;
 	}
 	get arrayBuffer(){
-		let result = []
-		this.topQuad.arrayBuffer.forEach(function (e){
-			result.push(e);
-		})
-		this.leftQuad.arrayBuffer.forEach(function (e){
-			result.push(e);
-		})
-		this.frontQuad.arrayBuffer.forEach(function (e){
-			result.push(e);
-		})
-		this.bottomQuad.arrayBuffer.forEach(function (e){
-			result.push(e);
-		})
-		this.rightQuad.arrayBuffer.forEach(function (e){
-			result.push(e);
-		})
-		this.backQuad.arrayBuffer.forEach(function (e){
-			result.push(e);
-		})
+		let result = new Float32Array(108);
+		for (let i=0; i<108; i++){
+			let j = i%18;
+			if (i < 18){
+				result[i] = this.topQuad.arrayBuffer[j];	
+			}
+			else if (i>= 18 && i<36){
+				result[i] = this.leftQuad.arrayBuffer[j];
+			}
+			else if (i>=36 && i<54){
+				result[i] = this.frontQuad.arrayBuffer[j];
+			}
+			else if (i>=54 && i<72){
+				result[i] = this.bottomQuad.arrayBuffer[j];
+			}
+			else if (i>=72 && i<90){
+				result[i] = this.rightQuad.arrayBuffer[j];
+			}
+			else {
+				result[i] = this.backQuad.arrayBuffer[j];
+			}
+		}
 		return result;
 	}
 }
@@ -407,14 +443,14 @@ class Polygon extends Origin {
 		super(translation, rotation);
 		this.edge = edge;
 		this.radius = radius;
-    this.center = centervector;
+    	this.center = centervector;
 	}
 	get centerPoint(){
 		return new SinglePoint(this.center, this.translation, this.rotation);
 	}
 	get triaList(){
 		let result = [];
-		for (let i = 0;	i	<	this.edge; i++){
+		for (let i = 0;	i<this.edge; i++){
 			let center = this.center;
 			let a = Math.PI*2/this.edge;
 			let x1 = Math.sin(a*i)*this.radius + this.center[0];
@@ -431,9 +467,10 @@ class Polygon extends Origin {
 		return result;
 	}
 	get arrayBuffer(){
-		let result = [];
+		let result = new Float32Array(this.edge*9);
 		let list = this.triaList;
-		list.forEach(function(e){
+		for (let i=0; i< list.length; i++){
+			let e = list[i];
 			let x0 = e.pointA.X;
 			let y0 = e.pointA.Y;
 			let z0 = e.pointA.Z;
@@ -442,38 +479,124 @@ class Polygon extends Origin {
 			let z1 = e.pointB.Z;
 			let x2 = e.pointC.X;
 			let y2 = e.pointC.Y;
-			let z2 = e.pointC.Z
-			result.push(x0);
-			result.push(y0);
-			result.push(z0);
-			result.push(x1);
-			result.push(y1);
-			result.push(z1);
-			result.push(x2);
-			result.push(y2);
-			result.push(z2);
-		})
+			let z2 = e.pointC.Z;
+			result[i*9] = x0;
+			result[i*9+1] = y0;
+			result[i*9+2] = z0;
+			result[i*9+3] = x1;
+			result[i*9+4] = y1;
+			result[i*9+5] = z1;
+			result[i*9+6] = x2;
+			result[i*9+7] = y2;
+			result[i*9+8] = z2;
+		}	
 		return result;
 	}
 }
 
 /*
-Orthogonal Cylinder
+Cylinder takes top and bottom radius, and height.
 */
 class Cylinder extends Origin {
-	constructor (edge, radius, height, translation, rotation){
+	constructor (edge, topradius, bottomradius, height, translation, rotation){
 		super(translation, rotation);
 		this.edge = edge;
-		this.radius = radius;
+		this.topradius = topradius;
+		this.bottomradius = bottomradius;
 		this.height = height;
 	}
 	get topPolygon(){
-		return new Polygon(this.edge, this.radius, [0,this.height/2,0], this.translation, this.rotation);
+		return new Polygon(this.edge, this.topradius, [0,this.height/2,0], this.translation, this.rotation);
 	}
 	get bottomPolygon(){
-		return new Polygon(this.edge, this.radius, [0,-this.height/2,0], this.translation, this.rotation);
+		return new Polygon(this.edge, this.bottomradius, [0,-this.height/2,0], this.translation, this.rotation);
+	}
+	get cylindricalSurface(){
+		let result = new Float32Array(18*this.edge);
+		for (let i = 0; i<this.edge; i++){
+			let triatop = this.topPolygon.triaList[i];
+			let triabottom = this.bottomPolygon.triaList[i];
+			let a = triatop.vectorb;
+			let b = triabottom.vectorb;
+			let c = triabottom.vectorc;
+			let d = triatop.vectorc;
+			let quad = new Quad(a,b,c,d,this.translation,this.rotation);
+			result.set(quad.arrayBuffer,i*18)
+		}	
+		return result
 	}
 	get arrayBuffer(){
-		return this.topPolygon.arrayBuffer.concat(this.bottomPolygon.arrayBuffer);
+		let topbuffer = this.topPolygon.arrayBuffer;
+		let bottombuffer = this.bottomBuffer;
+		let cyli = this.cylindricalSurface;
+		let result = new Float32Array(topbuffer.length + bottombuffer.length + cyli.length);
+		result.set(topbuffer,0);
+		result.set(cyli,topbuffer.length);
+		result.set(bottombuffer,topbuffer.length + cyli.length);
+		return result;
+	}
+	get bottomBuffer(){
+		let bottombuffer = this.bottomPolygon.arrayBuffer;
+		let bottomlength = bottombuffer.length
+		let result = new Float32Array(bottombuffer.length);
+		for (let i= bottomlength/3 -1; i>= 0; i--){
+			let x = bottombuffer[i*3];
+			let y = bottombuffer[i*3 + 1];
+			let z = bottombuffer[i*3 + 2];
+			result[bottomlength-i*3-3] = x;
+			result[bottomlength-i*3-2] = y;
+			result[bottomlength-i*3-1] = z;
+		}
+		return result;
+	}
+}
+
+/*
+2D Shape parallel to XZ plane
+Can be used to plot 2D points with callback func
+*/
+class Shape extends Origin{
+	constructor(center,translation, rotation, callback){
+		super(translation, rotation);
+		this.center = center;
+		this.callback = callback;
+		this.pointList = [];
+	}
+	get centerPoint(){
+		return new SinglePoint(this.center, this.translation, this.rotation);
+	}
+	//overloads x, y or x with function(X)
+	pointTo(x, y){
+		let t = 0;
+		if (arguments.length === 1){
+			if (this.callback && typeof this.callback === "function"){
+				t = this.callback(x);
+			}
+			else{
+				return "not valid function"
+			}
+		}
+		else {
+			t = y;			
+		}
+		let newvector = [this.center[0]+x, this.center[1], this.center[2]+t]
+		let apoint = new SinglePoint(newvector, this.translation, this.rotation)
+		this.pointList.push(apoint);
+		return "point added"
+	}
+	get arrayBuffer(){
+		let result = new Float32Array(this.pointList.length*3);
+		let array = this.pointList
+		for (let i =0; i<array.length; i++){
+			let x= array[i].X;
+			let y= array[i].Y;
+			let z= array[i].Z;
+			let a = new Float32Array(3)
+			a[0] = x
+			a[1] = y
+			a[2] = z
+			result.set(a, i*3);
+		}
+		return result;
 	}
 }

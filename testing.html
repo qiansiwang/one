@@ -13,7 +13,7 @@
     </head>
     <body>
         <div id="canvas"></div>
-
+        
         <script>
             var sp = new SinglePoint([1, 1, 0], [0, 1, 0], [180, 1, 0, 0, "A"])
             var sg = new Segment([0, 0, 0], [10, 0, 0], [0, 0, 0], [0, 1, 0, 0, "A"])
@@ -21,11 +21,11 @@
             var qu = new Quad([0, 0, 0], [10, 0, 0], [0, 10, 0], [10, 10, 0], [0, 0, 0], [0, 1, 0, 0, "A"])
             var box = new Box(10, 10, 10, [0, 5, 0], [0, 1, 0, 0, "A"])
             var poly = new Polygon(50, 5, [10,5,0], [0,0,0],[45, 1, 0, 0, "A"])
-            var cyli = new Cylinder(8, 5, 10, [0,10,5], [45, 1, 0, 0, "A"])
-
-
+            var cyli = new Cylinder(80, 0, 10, 10, [0, 0, 0], [0, 1, 0, 0, "A"])
+            var shape = new Shape([0, 0, 0], [0, 2, 0], [0, 1, 0, 0, "A"], (x => 2*x))
         </script>
         <script>
+            /*
             var scene = new THREE.Scene();
             var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             var renderer = new THREE.WebGLRenderer();
@@ -46,7 +46,7 @@
             document.getElementById("canvas").appendChild(renderer.domElement);
 
             var points = new THREE.PointCloud();
-            var vertices = [];
+            
             var newgeo = new THREE.Geometry();
             var material = new THREE.MeshBasicMaterial({color:0X00C3C3, transparent:true, opacity: 0.2})
             var geo = new THREE.BufferGeometry();
@@ -55,28 +55,32 @@
                 requestAnimationFrame(render);
                 renderer.render(scene, camera);
                 trackball.update();
+                //mesh.rotation.x += 0.1
+                //points.rotation.x -= 0.1
             }
-
-            var buffer = new Float32Array(poly.arrayBuffer.length)
-            for (var i=0; i< poly.arrayBuffer.length; i++){
-              buffer[i] = poly.arrayBuffer[i];
-            }
-            geo.addAttribute('position', new THREE.BufferAttribute(buffer,3));
+            
+            
+            geo.addAttribute('position', new THREE.BufferAttribute(cyli.arrayBuffer, 3));
             var mesh = new THREE.Mesh(geo, material);
-
-
-            for (var i = 0; i < poly.arrayBuffer.length/3; i++) {
-                var x = poly.arrayBuffer[(i + 1) * 3 - 3]
-                var y = poly.arrayBuffer[(i + 1) * 3 - 2]
-                var z = poly.arrayBuffer[(i + 1) * 3 - 1]
-                var vertice = new THREE.Vector3(x, y, z)
-                vertices.push(vertice);
+            
+            function buffertovertice(buffer) {
+                var result = [];
+                for (var i = 0; i < buffer.length / 3; i++) {
+                    var x = buffer[(i + 1) * 3 - 3]
+                    var y = buffer[(i + 1) * 3 - 2]
+                    var z = buffer[(i + 1) * 3 - 1]
+                    var vertice = new THREE.Vector3(x, y, z)
+                    result.push(vertice);
+                }
+                return result;
             }
+            var vertices = buffertovertice(cyli.arrayBuffer);
             points.geometry = newgeo;
-            newgeo.vertices = vertices;
+            newgeo.vertices = vertices
             scene.add(points);
             scene.add(mesh);
             render();
+            */
         </script>
 
     </body>
