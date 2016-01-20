@@ -554,6 +554,7 @@ class Cylinder extends Origin {
 /*
 2D Shape parallel to XZ plane
 Can be used to plot 2D points with callback func
+Return a 2D planer shape
 */
 class Shape extends Origin{
 	constructor(center,translation, rotation, callback){
@@ -561,6 +562,9 @@ class Shape extends Origin{
 		this.center = center;
 		this.callback = callback;
 		this.pointList = [];
+		this.segList = [];
+		this.vertices2D = [];
+		this.segList2D = [];
 	}
 	get centerPoint(){
 		return new SinglePoint(this.center, this.translation, this.rotation);
@@ -572,7 +576,7 @@ class Shape extends Origin{
 			if (this.callback && typeof this.callback === "function"){
 				t = this.callback(x);
 			}
-			else{
+			else {
 				return "not valid function"
 			}
 		}
@@ -581,22 +585,133 @@ class Shape extends Origin{
 		}
 		let newvector = [this.center[0]+x, this.center[1], this.center[2]+t]
 		let apoint = new SinglePoint(newvector, this.translation, this.rotation)
-		this.pointList.push(apoint);
-		return "point added"
+		let prepoint = [];
+		if (this.vertices2D.length !== 0){
+			let x0 = this.pointList[this.vertices2D.length -1][0];
+			let y0 = this.pointList[this.vertices2D.length -1][1];
+			prepoint = [x0,y0];
+			this.segList2D.push({a:prepoint, b:[x,t]})
+		}
+		if (x=== this.vertices2D[0][0] && t === this.vertices2D[0][1]){
+			return "shape closed"
+		}
+		else{
+			this.pointList.push(apoint);
+			this.vertices2D.push([x,t])
+			return "point added"	
+		}
+	}
+	//take out collinear points
+	excludeCollinear(){
+		let list = this.segList2D;
+		let newlist = [];
+		for (let i=0; i<list.length; i++){
+			let thisseg = list[i];
+			let x0 = thisseg.a[0];
+			let y0 = thisseg.a[1];
+			let x1 = thisseg.b[0];
+			let y1 = thisseg.b[1];
+			let nextseg
+			if (i === list.length-1){
+				nextseg = list[0];
+			}
+			else{
+				nextseg = list[i+1];
+			}
+			let a0 = nextseg.a[0];
+			let b0 = nextseg.a[1];
+			let a1 = nextseg.b[0];
+			let b1 = nextseg.b[1];
+			let xy = Math.round((y1-y0)/(x1-x0)*1000000)/1000000;
+			let ab = Math.round((b1-b0)/(a1-a0)*1000000)/1000000;
+			if (xy !== ab){
+				newlist.push(thisseg);
+			}
+			else{
+				if (i===list.length-1){
+					newlist.shift();
+				}
+				newlist.push({a:[x0,y0],b:[a1,b1]})
+			}
+		}
+		return newlist;
+	}
+	//clipping out two segments each time
+	clipEar(listofseg){
+		//try to find an ear to clip
+		for (let i=0; i<listofseg.length;i++){
+			let sega = listofseg[i];
+			let segb;
+			let copy = this.vertices2D
+			if (i=== listofseg.length-1){
+				segb = listofseg[0]
+				copy.splice(i,1)
+				copy.splice(0,1)
+				copy.splice(0,1)
+			}
+			else {
+				segb = listofseg[i+1]	
+				copy.splice(i,1)
+				copy.splice(i,1)
+				copy.splice(i,1)
+			}
+			let notfound = true
+			for (let j=0; j<copy.length;j++){
+				if (this.checkTriangle(sega, segb, copy[j])){
+					notfound = false
+					break;
+				}
+			}
+			if (notfound){
+				return [sega, segb]
+			}					 
+		}
 	}
 	get arrayBuffer(){
-		let result = new Float32Array(this.pointList.length*3);
-		let array = this.pointList
-		for (let i =0; i<array.length; i++){
-			let x= array[i].X;
-			let y= array[i].Y;
-			let z= array[i].Z;
-			let a = new Float32Array(3)
-			a[0] = x
-			a[1] = y
-			a[2] = z
-			result.set(a, i*3);
+		let arrayresult =[]
+		let array = this.segList2D
+		do{
+			let ear = this.clipEar(array)
 		}
-		return result;
+		while( array.length > 1 )
+		let result = new Float32Array(arrayresult.length)
+		result.set()
+		return result
 	}
+	
+	//check whether this point is inside of the triangle
+	checkTriangle(x,y,z){
+		let segmentA = x;
+		let segmentB = y;
+		let pointX = z;
+		let pointA = segmentA.a
+		let pointB = segmentA.b
+		let pointC = segmentB.b
+		let Ax = pointA[0];
+		let Ay = pointA[1];
+		let Bx = pointB[0];
+		let By = pointB[1];
+		let Cx = pointC[0];
+		let Cy = pointC[1];
+		let Xx = pointX[0];
+		let Xy = pointX[1];
+		let c = Math.sqrt((Ax-Bx)*(Ax-Bx)+(Ay-By)*(Ay-By))
+		let a = Math.sqrt((Bx-Cx)*(Bx-Cx)+(By-Cy)*(By-Cy))
+		let b = Math.sqrt((Ax-Cx)*(Ax-Cx)+(Ay-Cy)*(Ay-Cy))
+		let xa = Math.sqrt((Xx-Ax)*(Xx-Ax)+(Xy-Ay)*(Xy-Ay))
+		let xb = Math.sqrt((Xx-Bx)*(Xx-Bx)+(Xy-By)*(Xy-By))
+		let xc = Math.sqrt((Xx-Cx)*(Xx-Cx)+(Xy-Cy)*(Xy-Cy))
+		let gamma1 = Math.acos((xa*xa + xb*xb -c*c)/(2*xa*xb))
+		let gamma2 = Math.acos((xb*xb + xc*xc -a*a)/(2*xb*xc))
+		let gamma3 = Math.acos((xa*xa + xc*xc -b*b)/(2*xa*xc))
+		let result = gamma1+gamma2+gamma3
+		//on edge or point will return true
+		if (Math.round((result - Math.PI*2)*1000)){
+			return false;
+		}
+		else{
+			return true;
+		}
+	}
+	
 }
