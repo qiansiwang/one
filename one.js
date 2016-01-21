@@ -143,7 +143,7 @@ class Segment extends Origin {
 		super(translation, rotation);
 		this.vectora = vectora;
 		this.vectorb = vectorb;
-		
+
 	}
 	get pointA(){
 		return new SinglePoint(this.vectora, this.translation, this.rotation);
@@ -246,7 +246,7 @@ class Tria extends Origin {
 		result[5] = this.pointB.Z
 		result[6] = this.pointC.X
 		result[7] = this.pointC.Y
-		result[8] = this.pointC.Z 
+		result[8] = this.pointC.Z
 		return result;
 	}
 	get perpendicularVector(){
@@ -295,7 +295,7 @@ class Quad extends Origin {
 		}
 		let temptri = new Tria(vectora, vectorb, vectorc, [0,0,0], [0,1,0,0,"A"]);
 		if (temptri.coplanar(vectord[0], vectord[1], vectord[2])){
-			
+
 		}
 		else {
 			return;
@@ -411,7 +411,7 @@ class Box extends Origin {
 		for (let i=0; i<108; i++){
 			let j = i%18;
 			if (i < 18){
-				result[i] = this.topQuad.arrayBuffer[j];	
+				result[i] = this.topQuad.arrayBuffer[j];
 			}
 			else if (i>= 18 && i<36){
 				result[i] = this.leftQuad.arrayBuffer[j];
@@ -489,7 +489,7 @@ class Polygon extends Origin {
 			result[i*9+6] = x2;
 			result[i*9+7] = y2;
 			result[i*9+8] = z2;
-		}	
+		}
 		return result;
 	}
 }
@@ -522,7 +522,7 @@ class Cylinder extends Origin {
 			let d = triatop.vectorc;
 			let quad = new Quad(a,b,c,d,this.translation,this.rotation);
 			result.set(quad.arrayBuffer,i*18)
-		}	
+		}
 		return result
 	}
 	get arrayBuffer(){
@@ -562,6 +562,7 @@ class Shape extends Origin{
 		this.center = center;
 		this.callback = callback;
 		this.pointList = [];
+		this.trialist = [];
 		this.segList = [];
 		this.vertices2D = [];
 		this.segList2D = [];
@@ -581,28 +582,33 @@ class Shape extends Origin{
 			}
 		}
 		else {
-			t = y;			
+			t = y;
 		}
 		let newvector = [this.center[0]+x, this.center[1], this.center[2]+t]
 		let apoint = new SinglePoint(newvector, this.translation, this.rotation)
 		let prepoint = [];
 		if (this.vertices2D.length !== 0){
-			let x0 = this.pointList[this.vertices2D.length -1][0];
-			let y0 = this.pointList[this.vertices2D.length -1][1];
+			let x0 = this.vertices2D[this.vertices2D.length -1][0];
+			let y0 = this.vertices2D[this.vertices2D.length -1][1];
 			prepoint = [x0,y0];
 			this.segList2D.push({a:prepoint, b:[x,t]})
+			if (x=== this.vertices2D[0][0] && t === this.vertices2D[0][1]){
+				return "shape closed"
+			}
+			else{
+				this.pointList.push(apoint);
+				this.vertices2D.push([x,t])
+				return "point added"
+			}
 		}
-		if (x=== this.vertices2D[0][0] && t === this.vertices2D[0][1]){
-			return "shape closed"
-		}
-		else{
+		else {
 			this.pointList.push(apoint);
 			this.vertices2D.push([x,t])
-			return "point added"	
+			return "point added"
 		}
 	}
 	//take out collinear points
-	excludeCollinear(){
+	get excludeCollinear(){
 		let list = this.segList2D;
 		let newlist = [];
 		for (let i=0; i<list.length; i++){
@@ -636,13 +642,15 @@ class Shape extends Origin{
 		}
 		return newlist;
 	}
-	//clipping out two segments each time
+	//clipp out two segments given the segment list
 	clipEar(listofseg){
-		//try to find an ear to clip
+		let copypoint = listofseg.map(function(e){
+			return e.a
+		})
 		for (let i=0; i<listofseg.length;i++){
 			let sega = listofseg[i];
 			let segb;
-			let copy = this.vertices2D
+			let copy = copypoint.map((x=>x));
 			if (i=== listofseg.length-1){
 				segb = listofseg[0]
 				copy.splice(i,1)
@@ -650,12 +658,12 @@ class Shape extends Origin{
 				copy.splice(0,1)
 			}
 			else {
-				segb = listofseg[i+1]	
+				segb = listofseg[i+1]
 				copy.splice(i,1)
 				copy.splice(i,1)
 				copy.splice(i,1)
 			}
-			let notfound = true
+			let notfound = true;
 			for (let j=0; j<copy.length;j++){
 				if (this.checkTriangle(sega, segb, copy[j])){
 					notfound = false
@@ -663,22 +671,50 @@ class Shape extends Origin{
 				}
 			}
 			if (notfound){
-				return [sega, segb]
-			}					 
+				this.segList.push([sega, segb])
+				if (i=== listofseg.length-1){
+					listofseg.pop();
+					listofseg.shift();
+					return listofseg.splice(0,0,{a:sega.a,b:segb.b})
+				}
+				else {
+					return listofseg.splice(i,2,{a:sega.a,b:segb.b})
+				}
+			}
 		}
 	}
 	get arrayBuffer(){
 		let arrayresult =[]
-		let array = this.segList2D
-		do{
-			let ear = this.clipEar(array)
+		let array = this.excludeCollinear
+		if (array.length >= 4){
+			do{
+				this.clipEar(array)
+			}
+			while( array.length > 3 )
+			this.segList.push([array[0],array[1]]);
+			let result = new Float32Array(this.segList.length*9)
+			let centerx = this.center[0];
+			let centery = this.center[1];
+			let centerz = this.center[2];
+			let tran = this.translation;
+			let rota = this.rotation;
+			this.segList.forEach(function(e,i){
+				let sega = e[0];
+				let vectora = [sega.a[0] + centerx,centery,sega.a[1]+centerz]
+				let vectorb = [sega.b[0] + centerx,centery,sega.b[1]+centerz]
+				let segb = e[1];
+				let vectorc = [segb.b[0] + centerx,centery,segb.b[1]+centerz]
+				let tria = new Tria(vectora, vectorb, vectorc, tran, rota)
+				result.set(tria.arrayBuffer,i*9)
+			})
+			this.segList = [];
+			return result
 		}
-		while( array.length > 1 )
-		let result = new Float32Array(arrayresult.length)
-		result.set()
-		return result
+		else {
+			return array.length.toString() + " points are not enough"
+		}
 	}
-	
+
 	//check whether this point is inside of the triangle
 	checkTriangle(x,y,z){
 		let segmentA = x;
@@ -713,5 +749,5 @@ class Shape extends Origin{
 			return true;
 		}
 	}
-	
+
 }
