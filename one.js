@@ -684,7 +684,6 @@ class Shape extends Origin{
 		}
 	}
 	get arrayBuffer(){
-		let arrayresult =[]
 		let array = this.excludeCollinear
 		if (array.length >= 4){
 			do{
@@ -711,7 +710,7 @@ class Shape extends Origin{
 			return result
 		}
 		else {
-			return array.length.toString() + " points are not enough"
+			throw array.length.toString() + " points are not enough"
 		}
 	}
 
@@ -749,5 +748,4 @@ class Shape extends Origin{
 			return true;
 		}
 	}
-
 }
