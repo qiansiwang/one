@@ -4,7 +4,9 @@
 		"module":"commonjs"
 	},
 	"files":[
+		"testing.html",
 		"one.js",
 		"typings/node/dode.d.ts"
 	]
+	
 }

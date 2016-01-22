@@ -557,7 +557,7 @@ Can be used to plot 2D points with callback func
 Return a 2D planer shape
 */
 class Shape extends Origin{
-	constructor(center,translation, rotation, callback){
+	constructor(center, translation, rotation, callback){
 		super(translation, rotation);
 		this.center = center;
 		this.callback = callback;
@@ -748,4 +748,63 @@ class Shape extends Origin{
 			return true;
 		}
 	}
+}
+
+/*
+Spline is consisted of some segments
+spline can take function, spline can be used by itself or used by extrusion
+*/
+class Spline extends Origin {
+	constructor (center, t1, t2, callbackX, callbackY, callbackZ, segment, translation, rotation){
+		super(translation, rotation);
+		this.center = center;
+		this.t1 = t1;
+		this.t2 = t2;
+		this.xfunction = callbackX;
+		this.yfunction = callbackY;
+		this.zfunction = callbackZ;
+		this.segment = segment;
+	}
+	get segmentList(){
+		let result = [];
+		for (let i = 0; i< this.segment; i++){
+			let ele = this.t1 + (this.t2- this.t1)/this.segment*i;
+			let elex = this.center[0] + this.xfunction(ele);
+			let eley = this.center[1] + this.yfunction(ele);
+			let elez = this.center[2] + this.zfunction(ele);
+			let vecta = [elex, eley, elez];
+			let ele1 = this.t1 + (this.t2- this.t1)/this.segment*(i+1);
+			let elex1 = this.center[0] + this.xfunction(ele1); 
+			let eley1 = this.center[1] + this.yfunction(ele1);
+			let elez1 = this.center[2] + this.zfunction(ele1);
+			let vectb = [elex1, eley1, elez1]
+			let aseg = new Segment(vecta, vectb, this.translation, this.rotation);
+			result.push(aseg);
+		}
+		return result;
+	}
+	get arrayBuffer(){
+		let result = new Float32Array(this.segmentList.length * 6);
+		this.segmentList.forEach(function (e,i){
+			let ele = e.arrayBuffer;
+			result.set(ele,i*6);
+		})
+		return result;
+	}
+}
+
+/*
+Extrusion  will take a shape and extrude it along a spline
+Shape's center point will become the control point of the extrusion
+*/
+class Extrusion extends Spline {
+	constructor (shape, spline){
+		super(spline.center, spline.t1, spline.t2, spline.xfunction, spline.yfunction, 
+		spline.zfunction, spline.segment, spline.translation, spline.rotation);
+		this.shape = shape
+	}
+	get arrayBuffer(){
+		return this.arrayBuffer.map((x=>x))
+	}
+	
 }

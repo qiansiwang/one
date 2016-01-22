@@ -20,15 +20,16 @@
             var qu = new Quad([0, 0, 0], [10, 0, 0], [0, 10, 0], [10, 10, 0], [0, 0, 0], [0, 1, 0, 0, "A"])
             var box = new Box(10, 10, 10, [0, 5, 0], [0, 1, 0, 0, "A"])
             var poly = new Polygon(50, 5, [10,5,0], [0,0,0],[45, 1, 0, 0, "A"])
-            var cyli = new Cylinder(80, 0, 10, 10, [0, 0, 0], [0, 1, 0, 0, "A"])
+            var cyli = new Cylinder(8, 5, 10, 10, [0, 0, 0], [0, 1, 0, 0, "A"])
             var shape = new Shape([0, 0, 0], [0, 0, 0], [90, 1, 0, 0, "A"], (x => 2*x))
             shape.pointTo(1,1);
             shape.pointTo(1,3);
             shape.pointTo(3,3);
-            shape.pointTo(4,2.7)
+            shape.pointTo(4,2.7);
             shape.pointTo(3,2);
-            shape.pointTo(1.5,2.5)
+            shape.pointTo(1.5,2.5);
             shape.pointTo(1,1);
+            var spline = new Spline([0,0,0],0,10*Math.PI,(x=>4*Math.cos(x)), (x=>0.5*x), (x=>4*Math.sin(x)), 500, [0, 0, 0], [0, 1, 0, 0, "A"])
 
         </script>
         <script>
@@ -41,7 +42,6 @@
             scene.add(gridhelper)
             var axishelper = new THREE.AxisHelper(10,10,10);
             scene.add(axishelper)
-
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setClearColor(new THREE.Color(0xEEEEEE, 1.0));
             camera.position.z = -50;
@@ -67,7 +67,7 @@
             }
 
 
-            geo.addAttribute('position', new THREE.BufferAttribute(shape.arrayBuffer, 3));
+            geo.addAttribute('position', new THREE.BufferAttribute(spline.arrayBuffer, 3));
             var mesh = new THREE.Mesh(geo, material);
 
             function buffertovertice(buffer) {
@@ -81,7 +81,7 @@
                 }
                 return result;
             }
-            var vertices = buffertovertice(cyli.arrayBuffer);
+            var vertices = buffertovertice(spline.arrayBuffer);
             points.geometry = newgeo;
             newgeo.vertices = vertices
             scene.add(points);
