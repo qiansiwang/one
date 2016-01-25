@@ -69,7 +69,7 @@ class Origin {
 		let vz = normal2[2];
 		let vudot = vx*ux + vy*uy + vz*uz;
 		let newx = (1-cos)*vudot*vx + cos*ux + sin*(vy*uz-vz*uy);
-		let newy = (1-cos)*vudot*vy + cos*uy + sin*(-vx*uz+vz*ux*vz);
+		let newy = (1-cos)*vudot*vy + cos*uy + sin*(-vx*uz+vz*ux);
 		let newz = (1-cos)*vudot*vz	+ cos*uz + sin*(vx*uy-vy*ux);
 		return [newx, newy, newz];
 	}
@@ -113,14 +113,14 @@ Single Point is single vertex with origin
 
 class SinglePoint extends Origin {
 	constructor (vector, translation, rotation) {
-		super([vector[0]+translation[0], vector[1]+translation[1], vector[2]+translation[2]], rotation);
+		super([vector[0], vector[1], vector[2]], rotation);
 		this.localVector = vector
 	}
     get arrayBuffer(){
 		let result = new Float32Array(3)
-		result[0] = this.X;
-		result[1] = this.Y;
-		result[2] = this.Z;
+		result[0] = this.X + this.translation[0];
+		result[1] = this.Y + this.translation[1];
+		result[2] = this.Z + this.translation[2];
 		return result;
 	}
 	get originDistance() {
@@ -153,12 +153,12 @@ class Segment extends Origin {
 	}
 	get arrayBuffer(){
 		let result = new Float32Array(6)
-		result[0] = this.pointA.X
-		result[1] = this.pointA.Y
-		result[2] = this.pointA.Z
-		result[3] = this.pointB.X
-		result[4] = this.pointB.Y
-		result[5] = this.pointB.Z
+		result[0] = this.pointA.X + this.translation[0]
+		result[1] = this.pointA.Y + this.translation[1]
+		result[2] = this.pointA.Z + this.translation[2]
+		result[3] = this.pointB.X + this.translation[0]
+		result[4] = this.pointB.Y + this.translation[1]
+		result[5] = this.pointB.Z + this.translation[2]
 		return result;
 	}
     get segmentVector(){
@@ -214,9 +214,9 @@ class Tria extends Origin {
 		else {
 		}*/
 		super(translation, rotation);
-			this.vectora = vectora;
-			this.vectorb = vectorb;
-			this.vectorc = vectorc;
+		this.vectora = vectora;
+		this.vectorb = vectorb;
+		this.vectorc = vectorc;
 	}
 	get pointA(){
 		return new SinglePoint(this.vectora, this.translation, this.rotation);
@@ -238,15 +238,15 @@ class Tria extends Origin {
 	}
 	get arrayBuffer(){
 		let result = new Float32Array(9);
-		result[0] = this.pointA.X
-		result[1] = this.pointA.Y
-		result[2] = this.pointA.Z
-		result[3] = this.pointB.X
-		result[4] = this.pointB.Y
-		result[5] = this.pointB.Z
-		result[6] = this.pointC.X
-		result[7] = this.pointC.Y
-		result[8] = this.pointC.Z
+		result[0] = this.pointA.X + this.translation[0]
+		result[1] = this.pointA.Y + this.translation[1]
+		result[2] = this.pointA.Z + this.translation[2]
+		result[3] = this.pointB.X + this.translation[0]
+		result[4] = this.pointB.Y + this.translation[1]
+		result[5] = this.pointB.Z + this.translation[2]
+		result[6] = this.pointC.X + this.translation[0]
+		result[7] = this.pointC.Y + this.translation[1]
+		result[8] = this.pointC.Z + this.translation[2]
 		return result;
 	}
 	get perpendicularVector(){
@@ -562,7 +562,6 @@ class Shape extends Origin{
 		this.center = center;
 		this.callback = callback;
 		this.pointList = [];
-		this.trialist = [];
 		this.segList = [];
 		this.vertices2D = [];
 		this.segList2D = [];
@@ -796,6 +795,7 @@ class Spline extends Origin {
 /*
 Extrusion  will take a shape and extrude it along a spline
 Shape's center point will become the control point of the extrusion
+Each segment's starting point becomes the center point of the shape
 */
 class Extrusion extends Spline {
 	constructor (shape, spline){
@@ -803,8 +803,34 @@ class Extrusion extends Spline {
 		spline.zfunction, spline.segment, spline.translation, spline.rotation);
 		this.shape = shape
 	}
-	get arrayBuffer(){
-		return this.arrayBuffer.map((x=>x))
+	get shapeList(){
+		let result = [];
+		for (let i=0; i<this.segmentList.length; i++){
+			let seg = this.segmentList[i];
+			let v1 = seg.vectora.map((x=>x));
+			let v2 = seg.vectorb.map((x=>x))
+			let v3 = [v1[0], 1, v1[2]];
+			let atria = new Tria(v1, v2, v3, [0, 0, 0], [0, 1, 0, 0, "A"])
+			let perpend = atria.perpendicularVector
+			let xz = Math.sqrt((v2[0]-v1[0])*(v2[0]-v1[0])+(v2[2]-v1[2])*(v2[2]-v1[2]))
+			let angle = Math.atan(xz/(v2[1]-v1[1])) * 180 /Math.PI
+			let rotation = [angle, perpend[0], perpend[1], perpend[2],"A"]
+			let newshape = new Shape(this.center, v1 , rotation)
+			newshape.segList2D = this.shape.segList2D.map((x=>x))
+			result.push(newshape)
+		}
+		return result;
 	}
+	get arrayBuffer(){
+		let a = this.shapeList.length
+		let b = this.shapeList[1].arrayBuffer.length
+		let result = new Float32Array(a*b);
+		this.shapeList.forEach(function(e,i){
+			let ele = e.arrayBuffer
+			result.set(ele, i*b)
+		})
+		return result
+	}
+	
 	
 }

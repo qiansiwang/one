@@ -17,19 +17,18 @@
             var sp = new SinglePoint([1, 1, 0], [0, 1, 0], [180, 1, 0, 0, "A"])
             var sg = new Segment([0, 0, 0], [10, 0, 0], [0, 0, 0], [0, 1, 0, 0, "A"])
             var tr = new Tria([0, 0, 0], [10, 0, 0], [0, 10, 0], [0, 0, 0], [0, 1, 0, 0, "A"])
-            var qu = new Quad([0, 0, 0], [10, 0, 0], [0, 10, 0], [10, 10, 0], [0, 0, 0], [0, 1, 0, 0, "A"])
-            var box = new Box(10, 10, 10, [0, 5, 0], [0, 1, 0, 0, "A"])
+            var qu = new Quad([-1, 0, -1], [-1, 0, 1], [1, 0, 1], [1, 0, -1], [0, 0, 0], [90, -1, 0, 1, "A"])
+            var box = new Box(2, 2, 2, [0, 0, 0], [90, 1, 0, 1, "A"])
             var poly = new Polygon(50, 5, [10,5,0], [0,0,0],[45, 1, 0, 0, "A"])
             var cyli = new Cylinder(8, 5, 10, 10, [0, 0, 0], [0, 1, 0, 0, "A"])
-            var shape = new Shape([0, 0, 0], [0, 0, 0], [90, 1, 0, 0, "A"], (x => 2*x))
-            shape.pointTo(1,1);
-            shape.pointTo(1,3);
-            shape.pointTo(3,3);
-            shape.pointTo(4,2.7);
-            shape.pointTo(3,2);
-            shape.pointTo(1.5,2.5);
-            shape.pointTo(1,1);
-            var spline = new Spline([0,0,0],0,10*Math.PI,(x=>4*Math.cos(x)), (x=>0.5*x), (x=>4*Math.sin(x)), 500, [0, 0, 0], [0, 1, 0, 0, "A"])
+            var shape = new Shape([0, 0, 0], [0, 3, 0], [90, 1, 0, 1, "A"], (x => 2*x))
+            shape.pointTo(0,1);
+            shape.pointTo(0,-1);
+            shape.pointTo(1,-0.1);
+            shape.pointTo(1,0.1);
+            shape.pointTo(0,1);
+            var spline = new Spline([0,0,0],0,10*Math.PI,(x=>4*Math.cos(x)), (x=>0.5*x), (x=>4*Math.sin(x)), 100, [0, 0, 0], [0, 1, 0, 0, "A"])
+            var ex = new Extrusion(shape, spline);
 
         </script>
         <script>
@@ -55,7 +54,7 @@
             var points = new THREE.PointCloud();
 
             var newgeo = new THREE.Geometry();
-            var material = new THREE.MeshBasicMaterial({color:0X00C3C3, transparent:true, opacity: 0.2})
+            var material = new THREE.MeshBasicMaterial({color:0X00C3C3, transparent:false, opacity: 0.2})
             var geo = new THREE.BufferGeometry();
 
             function render() {
@@ -67,7 +66,7 @@
             }
 
 
-            geo.addAttribute('position', new THREE.BufferAttribute(spline.arrayBuffer, 3));
+            geo.addAttribute('position', new THREE.BufferAttribute(ex.arrayBuffer, 3));
             var mesh = new THREE.Mesh(geo, material);
 
             function buffertovertice(buffer) {
@@ -87,7 +86,6 @@
             scene.add(points);
             scene.add(mesh);
             render();
-
         </script>
 
     </body>
