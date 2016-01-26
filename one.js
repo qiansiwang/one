@@ -773,7 +773,7 @@ class Spline extends Origin {
 			let elez = this.center[2] + this.zfunction(ele);
 			let vecta = [elex, eley, elez];
 			let ele1 = this.t1 + (this.t2- this.t1)/this.segment*(i+1);
-			let elex1 = this.center[0] + this.xfunction(ele1); 
+			let elex1 = this.center[0] + this.xfunction(ele1);
 			let eley1 = this.center[1] + this.yfunction(ele1);
 			let elez1 = this.center[2] + this.zfunction(ele1);
 			let vectb = [elex1, eley1, elez1]
@@ -799,7 +799,7 @@ Each segment's starting point becomes the center point of the shape
 */
 class Extrusion extends Spline {
 	constructor (shape, spline){
-		super(spline.center, spline.t1, spline.t2, spline.xfunction, spline.yfunction, 
+		super(spline.center, spline.t1, spline.t2, spline.xfunction, spline.yfunction,
 		spline.zfunction, spline.segment, spline.translation, spline.rotation);
 		this.shape = shape
 	}
@@ -808,29 +808,57 @@ class Extrusion extends Spline {
 		for (let i=0; i<this.segmentList.length; i++){
 			let seg = this.segmentList[i];
 			let v1 = seg.vectora.map((x=>x));
-			let v2 = seg.vectorb.map((x=>x))
-			let v3 = [v1[0], 1, v1[2]];
+			let v2 = seg.vectorb.map((x=>x));
+			let v3 = [v1[0], v1[1] + 1, v1[2]];
 			let atria = new Tria(v1, v2, v3, [0, 0, 0], [0, 1, 0, 0, "A"])
 			let perpend = atria.perpendicularVector
 			let xz = Math.sqrt((v2[0]-v1[0])*(v2[0]-v1[0])+(v2[2]-v1[2])*(v2[2]-v1[2]))
-			let angle = Math.atan(xz/(v2[1]-v1[1])) * 180 /Math.PI
+			let angle = Math.atan(xz/(v1[1]-v2[1])) * 180 /Math.PI
 			let rotation = [angle, perpend[0], perpend[1], perpend[2],"A"]
 			let newshape = new Shape(this.center, v1 , rotation)
 			newshape.segList2D = this.shape.segList2D.map((x=>x))
+			newshape.pointList = this.shape.pointList.map((x=>x))
 			result.push(newshape)
+			if (i== this.segmentList.length -1){
+				let lastshape = new Shape(this.center, v2, rotation)
+				lastshape.segList2D = this.shape.segList2D.map((x=>x))
+				lastshape.pointList = this.shape.pointList.map((x=>x))
+				result.push(lastshape)
+			}
 		}
 		return result;
 	}
 	get arrayBuffer(){
 		let a = this.shapeList.length
-		let b = this.shapeList[1].arrayBuffer.length
-		let result = new Float32Array(a*b);
-		this.shapeList.forEach(function(e,i){
-			let ele = e.arrayBuffer
-			result.set(ele, i*b)
-		})
+		let b = this.shapeList[0].pointList.length
+		let result = new Float32Array((a-1)*b*18+this.shapeList[0].arrayBuffer.length*2);
+		result.set(this.shapeList[0].arrayBuffer, 0)
+		for (let i = 0; i < a; i++){
+			let ele1 = this.shapeList[i];
+			let ele2
+			if (i == a-1){
+				ele2 = this.shapeList[0];
+			}
+			else {
+				ele2 = this.shapeList[i+1];
+			}
+			for (let j = 0; j< b; j++){
+				let a = ele1.pointList[j].localVector;
+				let c = ele2.pointList[j].localVector;
+				let b1, d1
+				if (j == b-1){
+					b1 = ele1.pointList[0].localVector;
+					d1 = ele2.pointList[0].localVector;
+				}
+				else {
+					b1 = ele1.pointList[j+1].localVector;
+					d1 = ele2.pointList[j+1].localVector;
+				}
+				let newqua = new Quad(a, b1, c, d1, this.translation, this.rotation);
+				result.set(newqua.arrayBuffer, 18*j*(i+1))
+			}
+		}
+		result.set(this.shapeList[0].arrayBuffer, result.length -this.shapeList[0].arrayBuffer.length)
 		return result
 	}
-	
-	
 }
